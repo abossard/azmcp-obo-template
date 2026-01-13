@@ -13,6 +13,15 @@ param entraAppClientDisplayName string
 @description('Application Insights connection string. Use "DISABLED" to disable telemetry, or provide existing connection string. If omitted, new App Insights will be created.')
 param appInsightsConnectionString string = ''
 
+@description('Deploy Graph MCP Server for mail operations')
+param deployGraphMcpServer bool = false
+
+@description('Container registry for Graph MCP Server image')
+param graphMcpContainerRegistry string = 'mcr.microsoft.com'
+
+@description('Container image for Graph MCP Server')
+param graphMcpContainerImage string = 'graph-mail-mcp-server:latest'
+
 // Deploy Application Insights if appInsightsConnectionString is empty and not DISABLED
 var appInsightsName = '${acaName}-insights'
 
@@ -76,6 +85,24 @@ module acaInfrastructure 'modules/aca-infrastructure.bicep' = {
   }
 }
 
+// Optionally deploy Graph MCP Server for mail operations
+module acaGraphMcp 'modules/aca-graph-mcp.bicep' = if (deployGraphMcpServer) {
+  name: 'aca-graph-mcp-deployment'
+  params: {
+    name: acaName
+    location: location
+    environmentName: acaInfrastructure.outputs.containerAppEnvironmentName
+    appInsightsConnectionString: appInsights.outputs.connectionString
+    azureAdTenantId: tenant().tenantId
+    azureAdClientId: entraAppServer.outputs.entraAppClientId
+    azureAdInstance: environment().authentication.loginEndpoint
+    userAssignedManagedIdentityId: acaStorageManagedIdentity.outputs.managedIdentityId
+    userAssignedManagedIdentityClientId: acaStorageManagedIdentity.outputs.managedIdentityClientId
+    containerRegistry: graphMcpContainerRegistry
+    containerImage: graphMcpContainerImage
+  }
+}
+
 // Outputs for azd and other consumers
 output AZURE_TENANT_ID string = tenant().tenantId
 output AZURE_SUBSCRIPTION_ID string = subscription().subscriptionId
@@ -92,6 +119,10 @@ output ENTRA_APP_CLIENT_CLIENT_ID string = entraAppClient.outputs.entraAppClient
 output CONTAINER_APP_URL string = acaInfrastructure.outputs.containerAppUrl
 output CONTAINER_APP_NAME string = acaInfrastructure.outputs.containerAppName
 output AZURE_CONTAINER_APP_ENVIRONMENT_ID string = acaInfrastructure.outputs.containerAppEnvironmentId
+
+// Graph MCP Server outputs (conditional) - using null-coalescing to handle conditional deployment
+output GRAPH_MCP_CONTAINER_APP_URL string = deployGraphMcpServer ? acaGraphMcp.outputs.containerAppUrl : 'Not deployed'
+output GRAPH_MCP_CONTAINER_APP_NAME string = deployGraphMcpServer ? acaGraphMcp.outputs.containerAppName : 'Not deployed'
 
 // ACA user assigned managed identity
 output CONTAINER_APP_MANAGED_IDENTITY_CLIENT_ID string = acaStorageManagedIdentity.outputs.managedIdentityClientId

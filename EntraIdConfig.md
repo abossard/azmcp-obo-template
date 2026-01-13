@@ -12,6 +12,27 @@ az ad app permission add --id {entraAppId} --api {downstreamAppId} --api-permiss
 
 Azure MCP has tools that access various kinds of downstream APIs. `Azure Resource Manager` and `Azure Storage` are the ones needed for its storage tools. If you aren't sure what downstream API you need for the tool you would like to use, checkout out this [API permission document](https://github.com/microsoft/mcp/blob/main/servers/Azure.Mcp.Server/azd-templates/api-permissions.md) to see which API permissions you need to add for the Azure MCP tools you want to use.
 
+### Graph API Permissions for Mail Operations
+
+If you deploy the Graph MCP Server (`deployGraphMcpServer=true`), you need to add Microsoft Graph API permissions:
+
+```bash
+# Get the Graph API application ID (always the same for Microsoft Graph)
+GRAPH_API_ID="00000003-0000-0000-c000-000000000000"
+
+# Mail.Read permission ID
+MAIL_READ_ID="810c84a8-4a9e-49e6-bf7d-12d183f40d01"
+
+# Mail.ReadWrite permission ID  
+MAIL_READWRITE_ID="e2a3a72e-5f79-4c64-b1b1-878b674786c9"
+
+# Add Mail.Read permission
+az ad app permission add --id {entraAppId} --api $GRAPH_API_ID --api-permissions ${MAIL_READ_ID}=Scope
+
+# Add Mail.ReadWrite permission for draft operations
+az ad app permission add --id {entraAppId} --api $GRAPH_API_ID --api-permissions ${MAIL_READWRITE_ID}=Scope
+```
+
 ## Grant admin consent for downstream API calls
 
 Use the [az ad app permission admin-consent](https://learn.microsoft.com/en-us/cli/azure/ad/app/permission?view=azure-cli-latest#az-ad-app-permission-admin-consent) Azure CLI command to grant admin consent to the API permission.

@@ -1,0 +1,207 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.39.26.7824",
+      "templateHash": "5629906041712432101"
+    }
+  },
+  "parameters": {
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]",
+      "metadata": {
+        "description": "Location for all resources"
+      }
+    },
+    "name": {
+      "type": "string",
+      "metadata": {
+        "description": "Default name for Graph MCP Server Container App"
+      }
+    },
+    "containerAppName": {
+      "type": "string",
+      "defaultValue": "[format('{0}-graph', parameters('name'))]",
+      "metadata": {
+        "description": "Container App name for Graph MCP Server"
+      }
+    },
+    "environmentName": {
+      "type": "string",
+      "metadata": {
+        "description": "Environment name for the Container Apps Environment"
+      }
+    },
+    "cpuCores": {
+      "type": "string",
+      "defaultValue": "0.25",
+      "metadata": {
+        "description": "Number of CPU cores allocated to the container"
+      }
+    },
+    "memorySize": {
+      "type": "string",
+      "defaultValue": "0.5Gi",
+      "metadata": {
+        "description": "Amount of memory allocated to the container"
+      }
+    },
+    "minReplicas": {
+      "type": "int",
+      "defaultValue": 1,
+      "metadata": {
+        "description": "Minimum number of replicas"
+      }
+    },
+    "maxReplicas": {
+      "type": "int",
+      "defaultValue": 3,
+      "metadata": {
+        "description": "Maximum number of replicas"
+      }
+    },
+    "appInsightsConnectionString": {
+      "type": "string",
+      "metadata": {
+        "description": "Application Insights connection string"
+      }
+    },
+    "azureAdTenantId": {
+      "type": "string",
+      "metadata": {
+        "description": "Azure AD Tenant ID"
+      }
+    },
+    "azureAdClientId": {
+      "type": "string",
+      "metadata": {
+        "description": "Azure AD Client ID"
+      }
+    },
+    "azureAdInstance": {
+      "type": "string",
+      "metadata": {
+        "description": "Azure AD authorization Server"
+      }
+    },
+    "userAssignedManagedIdentityId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Resource ID of the user-assigned managed identity"
+      }
+    },
+    "userAssignedManagedIdentityClientId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Client ID of the user-assigned managed identity"
+      }
+    },
+    "containerRegistry": {
+      "type": "string",
+      "defaultValue": "mcr.microsoft.com",
+      "metadata": {
+        "description": "Container registry for custom image"
+      }
+    },
+    "containerImage": {
+      "type": "string",
+      "defaultValue": "graph-mail-mcp-server:latest",
+      "metadata": {
+        "description": "Container image for Graph MCP Server"
+      }
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.App/containerApps",
+      "apiVersion": "2024-03-01",
+      "name": "[parameters('containerAppName')]",
+      "location": "[parameters('location')]",
+      "tags": {
+        "product": "graph-mcp"
+      },
+      "identity": "[if(not(empty(parameters('userAssignedManagedIdentityId'))), createObject('type', 'UserAssigned', 'userAssignedIdentities', createObject(format('{0}', parameters('userAssignedManagedIdentityId')), createObject())), null())]",
+      "properties": {
+        "managedEnvironmentId": "[resourceId('Microsoft.App/managedEnvironments', parameters('environmentName'))]",
+        "configuration": {
+          "activeRevisionsMode": "Single",
+          "ingress": {
+            "external": true,
+            "targetPort": 8080,
+            "allowInsecure": false,
+            "transport": "http",
+            "traffic": [
+              {
+                "weight": 100,
+                "latestRevision": true
+              }
+            ]
+          }
+        },
+        "template": {
+          "containers": [
+            {
+              "name": "graph-mail-mcp-server",
+              "image": "[format('{0}/{1}', parameters('containerRegistry'), parameters('containerImage'))]",
+              "resources": {
+                "cpu": "[json(parameters('cpuCores'))]",
+                "memory": "[parameters('memorySize')]"
+              },
+              "env": [
+                {
+                  "name": "AZURE_AD_TENANT_ID",
+                  "value": "[parameters('azureAdTenantId')]"
+                },
+                {
+                  "name": "AZURE_AD_CLIENT_ID",
+                  "value": "[parameters('azureAdClientId')]"
+                },
+                {
+                  "name": "AZURE_AD_INSTANCE",
+                  "value": "[parameters('azureAdInstance')]"
+                },
+                {
+                  "name": "AZURE_CLIENT_ID",
+                  "value": "[parameters('userAssignedManagedIdentityClientId')]"
+                },
+                {
+                  "name": "APPLICATIONINSIGHTS_CONNECTION_STRING",
+                  "value": "[parameters('appInsightsConnectionString')]"
+                }
+              ]
+            }
+          ],
+          "scale": {
+            "minReplicas": "[parameters('minReplicas')]",
+            "maxReplicas": "[parameters('maxReplicas')]",
+            "rules": [
+              {
+                "name": "http-scaling-rule",
+                "http": {
+                  "metadata": {
+                    "concurrentRequests": "10"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "outputs": {
+    "containerAppUrl": {
+      "type": "string",
+      "value": "[format('https://{0}', reference(resourceId('Microsoft.App/containerApps', parameters('containerAppName')), '2024-03-01').configuration.ingress.fqdn)]"
+    },
+    "containerAppName": {
+      "type": "string",
+      "value": "[parameters('containerAppName')]"
+    }
+  }
+}

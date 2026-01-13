@@ -1,14 +1,14 @@
 @description('Location for all resources')
 param location string = resourceGroup().location
 
-@description('Default name for Azure Container App, and name prefix for all other resources')
+@description('Default name for Graph MCP Server Container App')
 param name string
 
-@description('Azure Container App name')
-param containerAppName string = name
+@description('Container App name for Graph MCP Server')
+param containerAppName string = '${name}-graph'
 
 @description('Environment name for the Container Apps Environment')
-param environmentName string = '${name}-env'
+param environmentName string
 
 @description('Number of CPU cores allocated to the container')
 param cpuCores string = '0.25'
@@ -25,9 +25,6 @@ param maxReplicas int = 3
 @description('Application Insights connection string')
 param appInsightsConnectionString string
 
-@description('Whether to collect telemetry')
-param azureMcpCollectTelemetry string
-
 @description('Azure AD Tenant ID')
 param azureAdTenantId string
 
@@ -37,44 +34,28 @@ param azureAdClientId string
 @description('Azure AD authorization Server')
 param azureAdInstance string
 
-@description('Azure MCP Server namespaces to enable. Must specify at least one namespace and no more than three.')
-@minLength(1)
-@maxLength(3)
-param namespaces array
-
 @description('Resource ID of the user-assigned managed identity')
 param userAssignedManagedIdentityId string = ''
 
 @description('Client ID of the user-assigned managed identity')
 param userAssignedManagedIdentityClientId string = ''
 
-var baseArgs = [
-  '--transport'
-  'http'
-  '--outgoing-auth-strategy'
-  'UseOnBehalfOf'
-  '--mode'
-  'all'
-  // SECURITY NOTE: The MCP server is deployed with only readonly tools ('--read-only') enabled.
-  // Deleting '--read-only' will remove this restriction and enable tools that can create, modify, or delete Azure resources,
-  // do so with caution, and ensure that access is granted only to trusted agents.
-  '--read-only'
-]
-var namespaceArgs = [for ns in namespaces: ['--namespace', ns]]
-var serverArgs = flatten(concat([baseArgs], namespaceArgs))
+@description('Container registry for custom image')
+param containerRegistry string = 'mcr.microsoft.com'
 
-resource containerAppsEnvironment 'Microsoft.App/managedEnvironments@2024-03-01' = {
+@description('Container image for Graph MCP Server')
+param containerImage string = 'graph-mail-mcp-server:latest'
+
+// Use existing Container Apps Environment
+resource containerAppsEnvironment 'Microsoft.App/managedEnvironments@2024-03-01' existing = {
   name: environmentName
-  location: location
-  properties: {
-  }
 }
 
 resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
   name: containerAppName
   location: location
   tags: {
-    product: 'azmcp'
+    product: 'graph-mcp'
   }
   identity: !empty(userAssignedManagedIdentityId) ? {
     type: 'UserAssigned'
@@ -102,57 +83,34 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
     template: {
       containers: [
         {
-          image: 'mcr.microsoft.com/azure-sdk/azure-mcp:latest' // Must be 2.0.0-beta.9 or beyond
-          name: containerAppName
-          command: []
-          args: serverArgs
+          name: 'graph-mail-mcp-server'
+          image: '${containerRegistry}/${containerImage}'
           resources: {
             cpu: json(cpuCores)
             memory: memorySize
           }
-          env: concat([
+          env: [
             {
-              name: 'ASPNETCORE_ENVIRONMENT'
-              value: 'Production'
-            }
-            {
-              name: 'ASPNETCORE_URLS'
-              value: 'http://+:8080'
-            }
-            {
-              name: 'AZURE_MCP_COLLECT_TELEMETRY'
-              value: azureMcpCollectTelemetry
-            }
-            {
-              name: 'AzureAd__Instance'
-              value: azureAdInstance
-            }
-            {
-              name: 'AzureAd__TenantId'
+              name: 'AZURE_AD_TENANT_ID'
               value: azureAdTenantId
             }
             {
-              name: 'AzureAd__ClientId'
+              name: 'AZURE_AD_CLIENT_ID'
               value: azureAdClientId
             }
             {
-              name: 'AzureAd__ClientCredentials__0__SourceType'
-              value: 'SignedAssertionFromManagedIdentity'
+              name: 'AZURE_AD_INSTANCE'
+              value: azureAdInstance
             }
             {
-              name: 'AzureAd__ClientCredentials__0__ManagedIdentityClientId'
+              name: 'AZURE_CLIENT_ID'
               value: userAssignedManagedIdentityClientId
             }
-            {
-              name: 'AZURE_LOG_LEVEL'
-              value: 'Verbose'
-            }
-          ], !empty(appInsightsConnectionString) ? [
             {
               name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
               value: appInsightsConnectionString
             }
-          ] : [])
+          ]
         }
       ]
       scale: {
@@ -160,10 +118,10 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
         maxReplicas: maxReplicas
         rules: [
           {
-            name: 'http-scaler'
+            name: 'http-scaling-rule'
             http: {
               metadata: {
-                concurrentRequests: '100'
+                concurrentRequests: '10'
               }
             }
           }
@@ -173,8 +131,5 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
   }
 }
 
-output containerAppResourceId string = containerApp.id
 output containerAppUrl string = 'https://${containerApp.properties.configuration.ingress.fqdn}'
 output containerAppName string = containerApp.name
-output containerAppEnvironmentId string = containerAppsEnvironment.id
-output containerAppEnvironmentName string = containerAppsEnvironment.name
