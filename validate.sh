@@ -6,11 +6,10 @@ set -e
 echo "=== Validating Graph MCP Server ==="
 echo ""
 
-# Validate Python syntax
-echo "1. Validating Python syntax..."
+# Validate Python server
+echo "1. Validating Python server..."
 cd graph-mcp-server
-python -m py_compile src/*.py
-echo "   ✓ All Python files are syntactically valid"
+python validate_server.py
 echo ""
 
 # Validate Bicep modules
