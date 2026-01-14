@@ -30,18 +30,20 @@ Get the complete details of a specific email message, including the full body co
 - `message_id` (required): The ID of the message to retrieve
 
 ### 3. `mail_create_draft`
-Create a new email draft in the user's mailbox.
+Create a new email draft in the user's mailbox with **rich HTML formatting support**.
 
 **Parameters:**
 - `subject` (required): Email subject line
 - `to_recipients` (required): Array of recipient objects with `address` and optional `name`
 - `cc_recipients` (optional): Array of CC recipient objects
 - `bcc_recipients` (optional): Array of BCC recipient objects
-- `body` (required): Email body content
+- `body` (required): Email body content (HTML or plain text)
 - `body_type` (optional): Content type - "text" or "html" (default: "text")
 
+**Rich Formatting:** When `body_type` is "html", you can use HTML tags for professional formatting. See [EMAIL_FORMATTING_GUIDE.md](EMAIL_FORMATTING_GUIDE.md) for comprehensive examples and best practices.
+
 ### 4. `mail_update_draft`
-Update an existing email draft.
+Update an existing email draft with **rich HTML formatting support**.
 
 **Parameters:**
 - `message_id` (required): The ID of the draft to update
@@ -49,8 +51,10 @@ Update an existing email draft.
 - `to_recipients` (required): Updated To recipients
 - `cc_recipients` (optional): Updated CC recipients
 - `bcc_recipients` (optional): Updated BCC recipients
-- `body` (required): Updated body content
+- `body` (required): Updated body content (HTML or plain text)
 - `body_type` (optional): Content type - "text" or "html"
+
+**Rich Formatting:** See [EMAIL_FORMATTING_GUIDE.md](EMAIL_FORMATTING_GUIDE.md) for HTML formatting examples, patterns, and best practices to help AI assistants create professional emails.
 
 ## Design Principles
 

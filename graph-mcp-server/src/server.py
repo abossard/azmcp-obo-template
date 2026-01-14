@@ -65,8 +65,23 @@ TOOLS: list[Tool] = [
     Tool(
         name="mail_create_draft",
         description=(
-            "Create a new email draft. "
-            "The draft is saved in the user's mailbox and can be edited or sent later."
+            "Create a new email draft with rich formatting support. "
+            "The draft is saved in the user's mailbox and can be edited or sent later.\n\n"
+            "**HTML FORMATTING TIPS:**\n"
+            "- Use body_type='html' for rich formatting (recommended for professional emails)\n"
+            "- For HTML emails, use <br> for line breaks, NOT \\n\n"
+            "- Common tags: <b>bold</b>, <i>italic</i>, <u>underline</u>\n"
+            "- Lists: <ul><li>item</li></ul> (bullets) or <ol><li>item</li></ol> (numbered)\n"
+            "- Links: <a href='url'>text</a>\n"
+            "- Tables: <table><tr><td>cell</td></tr></table> (great for structured data)\n"
+            "- Use inline CSS only: <span style='color: #0066cc;'>colored text</span>\n"
+            "- Structure: <p>paragraph</p> for proper spacing\n\n"
+            "**BEST PRACTICES:**\n"
+            "- Start with greeting: <p>Dear [Name],</p>\n"
+            "- Use paragraphs for readability\n"
+            "- End with signature: <p>Best regards,<br>[Your Name]</p>\n"
+            "- Keep HTML simple for best email client compatibility\n\n"
+            "See EMAIL_FORMATTING_GUIDE.md for detailed examples and patterns."
         ),
         inputSchema={
             "type": "object",
@@ -115,11 +130,20 @@ TOOLS: list[Tool] = [
                 },
                 "body": {
                     "type": "string",
-                    "description": "Email body content"
+                    "description": (
+                        "Email body content. When body_type is 'html', use HTML tags for formatting. "
+                        "Examples: <b>bold</b>, <br> for line breaks, <p>paragraph</p>, "
+                        "<ul><li>bullet</li></ul>, <a href='url'>link</a>. "
+                        "Use inline CSS for styling. See EMAIL_FORMATTING_GUIDE.md for examples."
+                    )
                 },
                 "body_type": {
                     "type": "string",
-                    "description": "Body content type: 'text' or 'html'",
+                    "description": (
+                        "Body content type: 'text' for plain text (use \\n for line breaks) or "
+                        "'html' for rich formatting (use <br>, <p>, <b>, etc.). "
+                        "HTML is recommended for professional emails. Default: 'text'"
+                    ),
                     "enum": ["text", "html"],
                     "default": "text"
                 }
@@ -130,8 +154,16 @@ TOOLS: list[Tool] = [
     Tool(
         name="mail_update_draft",
         description=(
-            "Update an existing email draft. "
-            "You can modify any field including subject, recipients, and body content."
+            "Update an existing email draft with rich formatting support. "
+            "You can modify any field including subject, recipients, and body content.\n\n"
+            "**HTML FORMATTING TIPS:**\n"
+            "- Use body_type='html' for rich formatting (recommended)\n"
+            "- For HTML emails, use <br> for line breaks, NOT \\n\n"
+            "- Common tags: <b>bold</b>, <i>italic</i>, <u>underline</u>\n"
+            "- Lists: <ul><li>item</li></ul> or <ol><li>item</li></ol>\n"
+            "- Links: <a href='url'>text</a>\n"
+            "- Use inline CSS: <span style='color: blue;'>text</span>\n\n"
+            "See EMAIL_FORMATTING_GUIDE.md for detailed examples."
         ),
         inputSchema={
             "type": "object",
@@ -184,11 +216,20 @@ TOOLS: list[Tool] = [
                 },
                 "body": {
                     "type": "string",
-                    "description": "Email body content"
+                    "description": (
+                        "Email body content. When body_type is 'html', use HTML tags for formatting. "
+                        "Examples: <b>bold</b>, <br> for line breaks, <p>paragraph</p>, "
+                        "<ul><li>bullet</li></ul>, <a href='url'>link</a>. "
+                        "Use inline CSS for styling. See EMAIL_FORMATTING_GUIDE.md for examples."
+                    )
                 },
                 "body_type": {
                     "type": "string",
-                    "description": "Body content type: 'text' or 'html'",
+                    "description": (
+                        "Body content type: 'text' for plain text (use \\n for line breaks) or "
+                        "'html' for rich formatting (use <br>, <p>, <b>, etc.). "
+                        "HTML is recommended for professional emails. Default: 'text'"
+                    ),
                     "enum": ["text", "html"],
                     "default": "text"
                 }
