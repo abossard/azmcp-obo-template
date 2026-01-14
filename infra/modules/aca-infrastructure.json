@@ -1,0 +1,230 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.39.26.7824",
+      "templateHash": "372129082981727083"
+    }
+  },
+  "parameters": {
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]",
+      "metadata": {
+        "description": "Location for all resources"
+      }
+    },
+    "name": {
+      "type": "string",
+      "metadata": {
+        "description": "Default name for Azure Container App, and name prefix for all other resources"
+      }
+    },
+    "containerAppName": {
+      "type": "string",
+      "defaultValue": "[parameters('name')]",
+      "metadata": {
+        "description": "Azure Container App name"
+      }
+    },
+    "environmentName": {
+      "type": "string",
+      "defaultValue": "[format('{0}-env', parameters('name'))]",
+      "metadata": {
+        "description": "Environment name for the Container Apps Environment"
+      }
+    },
+    "cpuCores": {
+      "type": "string",
+      "defaultValue": "0.25",
+      "metadata": {
+        "description": "Number of CPU cores allocated to the container"
+      }
+    },
+    "memorySize": {
+      "type": "string",
+      "defaultValue": "0.5Gi",
+      "metadata": {
+        "description": "Amount of memory allocated to the container"
+      }
+    },
+    "minReplicas": {
+      "type": "int",
+      "defaultValue": 1,
+      "metadata": {
+        "description": "Minimum number of replicas"
+      }
+    },
+    "maxReplicas": {
+      "type": "int",
+      "defaultValue": 3,
+      "metadata": {
+        "description": "Maximum number of replicas"
+      }
+    },
+    "appInsightsConnectionString": {
+      "type": "string",
+      "metadata": {
+        "description": "Application Insights connection string"
+      }
+    },
+    "azureMcpCollectTelemetry": {
+      "type": "string",
+      "metadata": {
+        "description": "Whether to collect telemetry"
+      }
+    },
+    "azureAdTenantId": {
+      "type": "string",
+      "metadata": {
+        "description": "Azure AD Tenant ID"
+      }
+    },
+    "azureAdClientId": {
+      "type": "string",
+      "metadata": {
+        "description": "Azure AD Client ID"
+      }
+    },
+    "azureAdInstance": {
+      "type": "string",
+      "metadata": {
+        "description": "Azure AD authorization Server"
+      }
+    },
+    "namespaces": {
+      "type": "array",
+      "minLength": 1,
+      "maxLength": 3,
+      "metadata": {
+        "description": "Azure MCP Server namespaces to enable. Must specify at least one namespace and no more than three."
+      }
+    },
+    "userAssignedManagedIdentityId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Resource ID of the user-assigned managed identity"
+      }
+    },
+    "userAssignedManagedIdentityClientId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Client ID of the user-assigned managed identity"
+      }
+    }
+  },
+  "variables": {
+    "copy": [
+      {
+        "name": "namespaceArgs",
+        "count": "[length(parameters('namespaces'))]",
+        "input": "[createArray('--namespace', parameters('namespaces')[copyIndex('namespaceArgs')])]"
+      }
+    ],
+    "baseArgs": [
+      "--transport",
+      "http",
+      "--outgoing-auth-strategy",
+      "UseOnBehalfOf",
+      "--mode",
+      "all",
+      "--read-only"
+    ],
+    "serverArgs": "[flatten(concat(createArray(variables('baseArgs')), variables('namespaceArgs')))]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.App/managedEnvironments",
+      "apiVersion": "2024-03-01",
+      "name": "[parameters('environmentName')]",
+      "location": "[parameters('location')]",
+      "properties": {}
+    },
+    {
+      "type": "Microsoft.App/containerApps",
+      "apiVersion": "2024-03-01",
+      "name": "[parameters('containerAppName')]",
+      "location": "[parameters('location')]",
+      "tags": {
+        "product": "azmcp"
+      },
+      "identity": "[if(not(empty(parameters('userAssignedManagedIdentityId'))), createObject('type', 'UserAssigned', 'userAssignedIdentities', createObject(format('{0}', parameters('userAssignedManagedIdentityId')), createObject())), null())]",
+      "properties": {
+        "managedEnvironmentId": "[resourceId('Microsoft.App/managedEnvironments', parameters('environmentName'))]",
+        "configuration": {
+          "activeRevisionsMode": "Single",
+          "ingress": {
+            "external": true,
+            "targetPort": 8080,
+            "allowInsecure": false,
+            "transport": "http",
+            "traffic": [
+              {
+                "weight": 100,
+                "latestRevision": true
+              }
+            ]
+          }
+        },
+        "template": {
+          "containers": [
+            {
+              "image": "mcr.microsoft.com/azure-sdk/azure-mcp:latest",
+              "name": "[parameters('containerAppName')]",
+              "command": [],
+              "args": "[variables('serverArgs')]",
+              "resources": {
+                "cpu": "[json(parameters('cpuCores'))]",
+                "memory": "[parameters('memorySize')]"
+              },
+              "env": "[concat(createArray(createObject('name', 'ASPNETCORE_ENVIRONMENT', 'value', 'Production'), createObject('name', 'ASPNETCORE_URLS', 'value', 'http://+:8080'), createObject('name', 'AZURE_MCP_COLLECT_TELEMETRY', 'value', parameters('azureMcpCollectTelemetry')), createObject('name', 'AzureAd__Instance', 'value', parameters('azureAdInstance')), createObject('name', 'AzureAd__TenantId', 'value', parameters('azureAdTenantId')), createObject('name', 'AzureAd__ClientId', 'value', parameters('azureAdClientId')), createObject('name', 'AzureAd__ClientCredentials__0__SourceType', 'value', 'SignedAssertionFromManagedIdentity'), createObject('name', 'AzureAd__ClientCredentials__0__ManagedIdentityClientId', 'value', parameters('userAssignedManagedIdentityClientId')), createObject('name', 'AZURE_LOG_LEVEL', 'value', 'Verbose')), if(not(empty(parameters('appInsightsConnectionString'))), createArray(createObject('name', 'APPLICATIONINSIGHTS_CONNECTION_STRING', 'value', parameters('appInsightsConnectionString'))), createArray()))]"
+            }
+          ],
+          "scale": {
+            "minReplicas": "[parameters('minReplicas')]",
+            "maxReplicas": "[parameters('maxReplicas')]",
+            "rules": [
+              {
+                "name": "http-scaler",
+                "http": {
+                  "metadata": {
+                    "concurrentRequests": "100"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.App/managedEnvironments', parameters('environmentName'))]"
+      ]
+    }
+  ],
+  "outputs": {
+    "containerAppResourceId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.App/containerApps', parameters('containerAppName'))]"
+    },
+    "containerAppUrl": {
+      "type": "string",
+      "value": "[format('https://{0}', reference(resourceId('Microsoft.App/containerApps', parameters('containerAppName')), '2024-03-01').configuration.ingress.fqdn)]"
+    },
+    "containerAppName": {
+      "type": "string",
+      "value": "[parameters('containerAppName')]"
+    },
+    "containerAppEnvironmentId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.App/managedEnvironments', parameters('environmentName'))]"
+    },
+    "containerAppEnvironmentName": {
+      "type": "string",
+      "value": "[parameters('environmentName')]"
+    }
+  }
+}

@@ -17,8 +17,27 @@ The `azd` template consists of the following Bicep modules:
 - **`main.bicep`** - Orchestrates the deployment of all resources.
 - **`aca-storage-managed-identity.bicep`** - Create a user-assigned managed identity
 - **`aca-infrastructure.bicep`** - Deploys Container App hosting the Azure MCP Server.
+- **`aca-graph-mcp.bicep`** - Optionally deploys Container App hosting the Graph Mail MCP Server.
 - **`entra-app.bicep`** - Creates Entra App registrations.
 - **`application-insights.bicep`** - Deploys Application Insights for telemetry and monitoring (conditional deployment, enabled by default).
+
+## MCP Servers
+
+This template can deploy two MCP servers:
+
+### 1. Azure MCP Server (Default)
+The official Azure MCP Server with **read-only** Azure Storage tools enabled. See [Azure MCP Server documentation](https://github.com/microsoft/mcp/blob/main/servers/Azure.Mcp.Server/docs/azmcp-commands.md) for customization options.
+
+### 2. Graph Mail MCP Server (Optional)
+A custom MCP server for Microsoft Graph API mail operations with On-Behalf-Of authentication. Features:
+- List recent emails with previews (subject, recipients, CC, body preview)
+- Get full email details
+- Create email drafts
+- Update email drafts
+
+See [graph-mcp-server/README.md](./graph-mcp-server/README.md) for detailed documentation.
+
+To deploy the Graph Mail MCP Server, set the `deployGraphMcpServer` parameter to `true` in your deployment.
 
 ## Quick start
 
