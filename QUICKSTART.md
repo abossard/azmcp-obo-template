@@ -19,6 +19,7 @@ A custom MCP server providing email management tools:
 - ✅ Follows Grokking Simplicity design principles
 - ✅ Follows A Philosophy of Software Design principles
 - ✅ Comprehensive logging throughout
+- ✅ Uses **uv** for fast Python package management
 
 ## Quick Deploy
 
@@ -27,6 +28,7 @@ A custom MCP server providing email management tools:
 - Azure CLI and Azure Developer CLI (azd)
 - Docker (for building the container image)
 - Azure Container Registry
+- **[uv](https://github.com/astral-sh/uv)** - Fast Python package manager (optional but recommended)
 
 ### Steps
 

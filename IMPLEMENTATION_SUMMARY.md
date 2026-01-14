@@ -139,7 +139,25 @@ Run validation: `./validate.sh`
 
 ## Testing
 
-### Automated Tests
+### End-to-End Blackbox Tests
+Comprehensive tests covering all pure calculation functions and data flows:
+
+```bash
+cd graph-mcp-server
+./run_tests.sh  # Runs both e2e and unit tests
+# Or manually:
+python test_e2e.py  # End-to-end blackbox tests
+python test_server.py  # Unit tests
+```
+
+Test coverage includes:
+- Pure calculation functions (parsing, formatting, transformations)
+- Complete data flows (API response → Parse → Format)
+- Edge cases and boundary conditions
+- Data immutability verification
+- Pure function properties (determinism, no side effects)
+
+### Validation Tests
 ```bash
 cd graph-mcp-server
 python validate_server.py
@@ -178,13 +196,26 @@ Comprehensive documentation provided:
 
 ## Dependencies
 
-Python packages:
+Python packages (managed with **uv** or pip):
 - `mcp>=1.0.0` - MCP SDK
 - `msal>=1.28.0` - Microsoft Authentication Library
 - `httpx>=0.27.0` - HTTP client
 - `requests>=2.31.0` - HTTP library
 - `python-dotenv>=1.0.0` - Environment configuration
 - `pydantic>=2.0.0` - Data validation
+
+### Package Management
+
+The project uses **[uv](https://github.com/astral-sh/uv)** as the recommended Python package manager for:
+- Fast dependency resolution and installation
+- Reproducible builds with lock files
+- Virtual environment management
+- Better caching and performance
+
+Configuration files:
+- `pyproject.toml` - Project metadata and dependencies (uv format)
+- `requirements.txt` - Compatibility with pip
+- `.python-version` - Python version specification for uv
 
 ## Next Steps
 

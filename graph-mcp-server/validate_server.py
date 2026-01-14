@@ -82,6 +82,8 @@ def test_required_files():
     required_files = [
         'Dockerfile',
         'requirements.txt',
+        'pyproject.toml',
+        '.python-version',
         'README.md',
         '.env.example',
         'src/__init__.py',
@@ -89,7 +91,8 @@ def test_required_files():
         'src/config.py',
         'src/auth.py',
         'src/graph_client.py',
-        'src/server.py'
+        'src/server.py',
+        'test_e2e.py'
     ]
     
     errors = []
@@ -118,8 +121,8 @@ def test_dockerfile():
         
         checks = [
             ('FROM python:', 'Uses Python base image'),
-            ('COPY requirements.txt', 'Copies requirements.txt'),
-            ('pip install', 'Installs dependencies'),
+            ('COPY pyproject.toml', 'Copies pyproject.toml'),
+            ('uv', 'Uses uv package manager'),
             ('EXPOSE 8080', 'Exposes port 8080'),
             ('CMD', 'Has CMD instruction')
         ]
@@ -133,12 +136,13 @@ def test_dockerfile():
 
 
 def test_requirements():
-    """Verify requirements.txt has necessary dependencies"""
+    """Verify requirements.txt and pyproject.toml have necessary dependencies"""
     print("\nRequirements Validation:")
     
+    # Check requirements.txt
     req_path = os.path.join(os.path.dirname(__file__), 'requirements.txt')
     with open(req_path, 'r') as f:
-        content = f.read()
+        req_content = f.read()
         
         required_deps = [
             ('mcp', 'MCP SDK'),
@@ -148,11 +152,25 @@ def test_requirements():
         ]
         
         for dep, description in required_deps:
-            if dep in content:
+            if dep in req_content:
                 print(f"✓ {description} ({dep})")
             else:
                 print(f"✗ Missing: {description} ({dep})")
                 sys.exit(1)
+    
+    # Check pyproject.toml
+    pyproject_path = os.path.join(os.path.dirname(__file__), 'pyproject.toml')
+    if os.path.exists(pyproject_path):
+        with open(pyproject_path, 'r') as f:
+            pyproject_content = f.read()
+            
+            if '[project]' in pyproject_content and 'dependencies' in pyproject_content:
+                print(f"✓ pyproject.toml configured for uv")
+            else:
+                print(f"⚠ pyproject.toml exists but may be incomplete")
+    else:
+        print(f"✗ Missing: pyproject.toml for uv support")
+        sys.exit(1)
 
 
 if __name__ == '__main__':

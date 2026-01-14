@@ -125,6 +125,40 @@ See `.env.example` for required configuration:
 
 ## Local Development
 
+### Using uv (recommended)
+
+[uv](https://github.com/astral-sh/uv) is a fast Python package manager. Install it first:
+
+```bash
+# Install uv
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+1. Install dependencies:
+```bash
+uv pip install -r requirements.txt
+# Or sync from pyproject.toml
+uv sync
+```
+
+2. Configure environment:
+```bash
+cp .env.example .env
+# Edit .env with your values
+```
+
+3. Run the server:
+```bash
+uv run python -m src.server
+```
+
+4. Run tests:
+```bash
+uv run python test_e2e.py
+```
+
+### Using pip (alternative)
+
 1. Install dependencies:
 ```bash
 pip install -r requirements.txt
